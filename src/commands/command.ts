@@ -1,10 +1,10 @@
 import type { CommandInteraction } from "discord.js";
 
 export interface Command {
-  commandData: {
+  data: {
     name: string;
     description: string;
-    options: {
+    options?: {
       name: string;
       type: number;
       description: string;

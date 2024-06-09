@@ -3,9 +3,9 @@ import { type CommandInteraction } from "discord.js";
 import { players } from "../players";
 import type { Command } from "./command.ts";
 
-class AddPlayer implements Command {
-  public readonly commandData = {
-    name: "add player",
+export class AddPlayer implements Command {
+  public readonly data = {
+    name: "add_player",
     description: "Add a player by username",
     options: [
       {
