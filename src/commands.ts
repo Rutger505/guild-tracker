@@ -5,7 +5,7 @@ import { getPlayerData } from "./utils";
 const players: Map<string, string> = new Map(); // Key: username, Value: UUID
 
 export async function addPlayer(interaction: CommandInteraction) {
-  const username = interaction.options.getString("username");
+  const username = interaction.options.get("username")?.value as string;
   if (!username) {
     await interaction.reply("Please provide a username.");
     return;
@@ -29,7 +29,7 @@ export async function addPlayer(interaction: CommandInteraction) {
 }
 
 export async function removePlayer(interaction: CommandInteraction) {
-  const username = interaction.options.getString("username");
+  const username = interaction.options.get("username")?.value as string;
   if (username) {
     players.delete(username);
     await interaction.reply(`Removed player ${username}`);
@@ -63,7 +63,7 @@ export async function wherePlayers(interaction: CommandInteraction) {
 }
 
 export async function playerInfo(interaction: CommandInteraction) {
-  const username = interaction.options.getString("username");
+  const username = interaction.options.get("username")?.value as string;
   if (!username) {
     await interaction.reply("Please provide a username.");
     return;
