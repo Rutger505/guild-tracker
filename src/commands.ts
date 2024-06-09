@@ -44,7 +44,10 @@ export async function wherePlayers(interaction: CommandInteraction) {
       try {
         const playerData = await getPlayerData(uuid);
         if (playerData?.success) {
-          return `${username} is currently ${playerData.session.online ? `online in ${playerData.session.gameType} on ${playerData.session.map}` : "offline"}`;
+          const status = playerData.session.online
+            ? `online in ${playerData.session.gameType} on ${playerData.session.map}`
+            : "offline";
+          return `${username} is currently ${status}`;
         } else {
           return `Failed to get status for ${username}`;
         }
@@ -61,20 +64,27 @@ export async function wherePlayers(interaction: CommandInteraction) {
 
 export async function playerInfo(interaction: CommandInteraction) {
   const username = interaction.options.getString("username");
-  const uuid = players.get(username || "");
+  if (!username) {
+    await interaction.reply("Please provide a username.");
+    return;
+  }
+
+  const uuid = players.get(username);
 
   if (!uuid) {
     await interaction.reply(
       "Player not found in the list. Please add the player first.",
     );
+    return;
   }
 
   try {
     const playerData = await getPlayerData(uuid);
     if (playerData?.success) {
-      await interaction.reply(
-        `${username} is currently ${playerData.session.online ? `online in ${playerData.session.gameType} on ${playerData.session.map}` : "offline"}`,
-      );
+      const status = playerData.session.online
+        ? `online in ${playerData.session.gameType} on ${playerData.session.map}`
+        : "offline";
+      await interaction.reply(`${username} is currently ${status}`);
     } else {
       await interaction.reply(`Failed to get info for ${username}`);
     }
