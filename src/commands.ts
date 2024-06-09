@@ -1,95 +1,46 @@
-import axios from "axios";
-import { CommandInteraction } from "discord.js";
-import { getPlayerData } from "./utils";
+import {
+  type CacheType,
+  type CommandInteraction,
+  type Interaction,
+  REST,
+  Routes,
+} from "discord.js";
+import addPlayer from "./commands/addPlayer.ts";
+import removePlayer from "./commands/removePlayer.ts";
+import wherePlayers from "./commands/wherePlayers.ts";
+import wherePlayer from "./commands/wherePlayer.ts";
 
-const players: Map<string, string> = new Map(); // Key: username, Value: UUID
-
-export async function addPlayer(interaction: CommandInteraction) {
-  const username = interaction.options.get("username")?.value as string;
-  if (!username) {
-    await interaction.reply("Please provide a username.");
-    return;
-  }
-
-  try {
-    const response = await axios.get(
-      `https://api.mojang.com/users/profiles/minecraft/${username}`,
-    );
-    if (response.data?.id) {
-      const uuid = response.data.id;
-      players.set(username, uuid);
-      await interaction.reply(`Added player ${username} with UUID ${uuid}`);
-    } else {
-      await interaction.reply(`Could not find UUID for player ${username}`);
-    }
-  } catch (error) {
-    console.error(error);
-    await interaction.reply(`Error fetching UUID for player ${username}`);
-  }
-}
-
-export async function removePlayer(interaction: CommandInteraction) {
-  const username = interaction.options.get("username")?.value as string;
-  if (username) {
-    players.delete(username);
-    await interaction.reply(`Removed player ${username}`);
-  } else {
-    await interaction.reply("Please provide a username.");
-  }
-}
-
-export async function wherePlayers(interaction: CommandInteraction) {
-  const playerStatuses = await Promise.all(
-    Array.from(players.entries()).map(async ([username, uuid]) => {
-      try {
-        const playerData = await getPlayerData(uuid);
-        if (playerData?.success) {
-          const status = playerData.session.online
-            ? `online in ${playerData.session.gameType} on ${playerData.session.map}`
-            : "offline";
-          return `${username} is currently ${status}`;
-        } else {
-          return `Failed to get status for ${username}`;
-        }
-      } catch (error) {
-        console.error(error);
-        return `Error retrieving status for ${username}`;
-      }
-    }),
-  );
-
-  console.log(playerStatuses);
-  await interaction.reply(playerStatuses.join("\n"));
-}
-
-export async function playerInfo(interaction: CommandInteraction) {
-  const username = interaction.options.get("username")?.value as string;
-  if (!username) {
-    await interaction.reply("Please provide a username.");
-    return;
-  }
-
-  const uuid = players.get(username);
-
-  if (!uuid) {
-    await interaction.reply(
-      "Player not found in the list. Please add the player first.",
-    );
-    return;
-  }
+export async function updateCommandList() {
+  const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN!);
 
   try {
-    const playerData = await getPlayerData(uuid);
-    if (playerData?.success) {
-      const status = playerData.session.online
-        ? `online in ${playerData.session.gameType} on ${playerData.session.map}`
-        : "offline";
-      await interaction.reply(`${username} is currently ${status}`);
-    } else {
-      await interaction.reply(`Failed to get info for ${username}`);
-    }
+    console.log("Started refreshing application (/) commands.");
+
+    await rest.put(Routes.applicationCommands(process.env.CLIENT_ID!), {});
+
+    console.log("Successfully reloaded application (/) commands.");
   } catch (error) {
     console.error(error);
-    await interaction.reply(`Error retrieving info for ${username}`);
+  }
+}
+
+const commandMap: Record<
+  string,
+  (interaction: CommandInteraction) => Promise<void>
+> = {
+  "add player": addPlayer,
+  "remove player": removePlayer,
+  "where players": wherePlayers,
+  "where player": wherePlayer,
+};
+
+export function handleCommand(interaction: Interaction<CacheType>) {
+  if (!interaction.isCommand()) return;
+
+  const { commandName } = interaction;
+
+  const command = commandMap[commandName];
+  if (command) {
+    command(interaction);
   }
 }
